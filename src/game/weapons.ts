@@ -173,7 +173,7 @@ function updateLightning(w: WeaponState, player: Player, enemies: Enemy[]) {
 
 function updateAura(w: WeaponState, player: Player, enemies: Enemy[]) {
   const lvIdx = lv(w)
-  const radius = (100 + lvIdx * 28) * (m6(w) ? 1.04 : 1)
+  const radius = Math.min((100 + lvIdx * 28) * (m6(w) ? 1.04 : 1), 300)
 
   // Continuously slow all enemies inside the aura
   for (const e of enemies) {
@@ -201,7 +201,7 @@ function updateAura(w: WeaponState, player: Player, enemies: Enemy[]) {
 function updateOrb(w: WeaponState, player: Player, enemies: Enemy[]) {
   if (w.timer > 0) return
   const lvIdx = lv(w)
-  const radius = (55 + lvIdx * 25) * (m6(w) ? 1.25 : 1)
+  const radius = Math.min(55 + lvIdx * 16, 165)
   const dmg = player.damage * (0.18 + lvIdx * 0.07) * (m6(w) ? M6_DMG : 1)
 
   for (const e of enemies) {
@@ -217,7 +217,7 @@ function updateOrb(w: WeaponState, player: Player, enemies: Enemy[]) {
 
 function renderOrb(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number, camY: number, player: Player) {
   const lvIdx = lv(w)
-  const radius = (55 + lvIdx * 25) * (m6(w) ? 1.25 : 1)
+  const radius = Math.min(55 + lvIdx * 16, 165)
   const px = player.pos.x - camX; const py = player.pos.y - camY
   const pulse = (Math.sin(Date.now() / 280) + 1) / 2
   const alpha = 0.06 + pulse * 0.07
@@ -274,7 +274,7 @@ function renderSword(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number
 
 function renderAura(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number, camY: number, player: Player) {
   const lvIdx = lv(w)
-  const radius = (100 + lvIdx * 28) * (m6(w) ? 1.04 : 1)
+  const radius = Math.min((100 + lvIdx * 28) * (m6(w) ? 1.04 : 1), 300)
   const px = player.pos.x - camX; const py = player.pos.y - camY
   const pulse = (Math.sin(Date.now() / 400) + 1) / 2
   const alpha = 0.06 + pulse * 0.08
