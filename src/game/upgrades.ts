@@ -17,6 +17,7 @@ const PASSIVE_POOL: UpgradeDef[] = [
   { id: 'p_armor',     name: 'Armadura',    description: '+12% redução de dano',        rarity: 'uncommon',  weight: 6,  apply: p => { p.armor = Math.min(p.armor + 0.12, 0.85) } },
   { id: 'p_wisdom',    name: 'Sabedoria',   description: '+25% XP obtida',              rarity: 'uncommon',  weight: 6,  apply: p => { p.xpMultiplier *= 1.25 } },
   { id: 'p_range',     name: 'Alcance',     description: '+35% alcance dos projéteis',  rarity: 'uncommon',  weight: 6,  apply: p => { p.projectileRange *= 1.35 } },
+  { id: 'p_luck',      name: 'Sorte',       description: '+15% chance de drops raros',  rarity: 'uncommon',  weight: 6,  apply: p => { p.luck += 0.15 } },
   { id: 'p_fury',      name: 'Fúria',       description: 'Cooldowns -20%',             rarity: 'rare',      weight: 3,  apply: p => { for (const w of p.weapons) w.timer = Math.max(0, w.timer * 0.8) } },
   { id: 'p_overclock', name: 'Sobrecarga',  description: '+30% dano e +15% velocidade', rarity: 'rare',     weight: 2,  apply: p => { p.damage *= 1.3; p.speed *= 1.15 } },
   { id: 'p_titan',     name: 'Titã',        description: '+80 HP e +20% redução de dano', rarity: 'epic',   weight: 1,  apply: p => { p.maxHp += 80; p.hp = Math.min(p.hp + 80, p.maxHp); p.armor = Math.min(p.armor + 0.2, 0.85) } },

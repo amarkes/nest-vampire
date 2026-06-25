@@ -83,7 +83,7 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
   function onKill(e: Enemy) {
     kills++
     xpOrbs.push(new XpOrb(e.pos.x, e.pos.y, xpVal(e.type)))
-    if (Math.random() < 0.012) goldDrops.push(new GoldDrop(e.pos.x, e.pos.y, 1))
+    if (Math.random() < 0.012 * (1 + player.luck)) goldDrops.push(new GoldDrop(e.pos.x, e.pos.y, 1))
     if (player.lifeSteal > 0) player.hp = Math.min(player.maxHp, player.hp + player.lifeSteal)
   }
 
