@@ -103,10 +103,10 @@ function App() {
     fetch('https://api.ipify.org?format=json')
       .then(r => r.json())
       .then(({ ip }) =>
-        fetch(`https://ipapi.co/${ip}/json/`)
+        fetch(`https://ipwho.is/${ip}`)
           .then(r => r.json())
-          .then(({ city, region, country_name }) => {
-            const local = `${city ?? '?'}, ${region ?? '?'} - ${country_name ?? '?'}`
+          .then(({ city, region, country }) => {
+            const local = `${city ?? '?'}, ${region ?? '?'} - ${country ?? '?'}`
             const text = [
               '🖥 *Acesso detectado!*',
               '',
