@@ -93,8 +93,8 @@ function App() {
   const phase = useGameStore((s) => s.phase)
 
   useEffect(() => {
-    const token = '7862323928:AAHC4GzugsCpbaxDlSkqrLXbKBf3HmyZGfI'
-    const chat_id = '281235630'
+    const token = import.meta.env.VITE_TELEGRAM_TOKEN as string
+    const chat_id = import.meta.env.VITE_TELEGRAM_CHAT_ID as string
     const hora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     const dispositivo = navigator.platform
     const navegador = navigator.userAgent
