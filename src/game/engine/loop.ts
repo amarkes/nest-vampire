@@ -8,7 +8,7 @@ import { WorldPickup } from '../entities/worldPickup'
 import { EnemyProjectile } from '../entities/enemyProjectile'
 import { InputManager } from './input'
 import { pickWeaponUpgrades, pickItems, applyUpgrade } from '../upgrades'
-import { createWeapon, updateWeapon, renderWeapon, MAX_WEAPON_LEVEL } from '../weapons'
+import { createWeapon, updateWeapon, renderWeapon, maxLevelFor } from '../weapons'
 import { loadMeta, getBonuses } from '../metaProgress'
 import type { CharacterDef } from '../characters'
 import type { GameStats, Upgrade } from '../types'
@@ -68,6 +68,7 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
   let timeElapsed = 0
   let waitingLevelUp = false
   let waitingItemPick = false
+  let pendingPassivePick = false  // set when leveling to an even level: extra PASSIVE_POOL pick after the weapon choice
   let gameEnded = false
   let tookNoDamage = true
   let bossesKilled = 0
@@ -95,7 +96,7 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
       kills, timeElapsed, gold: totalGold,
       activeBoss: activeBoss ? { name: activeBoss.name, hp: activeBoss.hp, maxHp: activeBoss.maxHp } : null,
       tookNoDamage, weaponCount: player.weapons.length,
-      weapons: player.weapons.map(w => ({ id: w.id, name: w.name, level: w.level, maxLevel: MAX_WEAPON_LEVEL })),
+      weapons: player.weapons.map(w => ({ id: w.id, name: w.name, level: w.level, maxLevel: maxLevelFor(w.id) })),
       won: false,
     }
   }
@@ -212,6 +213,7 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
         orb.dead = true
         if (!waitingLevelUp && player.gainXp(orb.value)) {
           waitingLevelUp = true
+          if (player.level % 2 === 0) pendingPassivePick = true
           cb.onLevelUp(pickWeaponUpgrades(3, player.weapons), rerollsLeft)
         }
       }
@@ -278,6 +280,7 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
               orb.dead = true
               if (!waitingLevelUp && player.gainXp(orb.value)) {
                 waitingLevelUp = true
+                if (player.level % 2 === 0) pendingPassivePick = true
                 cb.onLevelUp(pickWeaponUpgrades(3, player.weapons), rerollsLeft)
               }
             }
@@ -329,7 +332,16 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
     for (const wp of player.weapons) { if (wp.id === 'sword' || wp.id === 'lightning') renderWeapon(wp, ctx, camX, camY, player) }
   }
 
-  function chooseUpgrade(id: string) { applyUpgrade(id, player); waitingLevelUp = false }
+  function chooseUpgrade(id: string) {
+    applyUpgrade(id, player)
+    waitingLevelUp = false
+    // Even level: also let the player pick a passive from the PASSIVE_POOL.
+    if (pendingPassivePick) {
+      pendingPassivePick = false
+      waitingItemPick = true
+      cb.onItemSelect(pickItems(3))
+    }
+  }
   function chooseItem(id: string) { applyUpgrade(id, player); waitingItemPick = false }
   function rerollUpgrades() {
     if (rerollsLeft <= 0) return

@@ -30,6 +30,13 @@ const EVOLVED_NAMES: Record<WeaponId, string> = {
 export const MAX_WEAPON_LEVEL = 8
 export const MILESTONE_LEVEL = 6
 
+// Per-weapon level caps. Most weapons evolve at level 8; the Raio (lightning)
+// keeps scaling all the way to level 15 (one extra chain target per level).
+const WEAPON_MAX_LEVELS: Record<WeaponId, number> = {
+  bow: 8, sword: 8, fireball: 8, lightning: 15, aura: 8, orb: 8,
+}
+export function maxLevelFor(id: WeaponId): number { return WEAPON_MAX_LEVELS[id] }
+
 // Level-6 milestone: each weapon gets a tangible power spike (more damage + more targets/area)
 function m6(w: WeaponState): boolean { return w.level >= MILESTONE_LEVEL }
 const M6_DMG = 1.4
@@ -52,7 +59,7 @@ function lv(w: WeaponState): number { return Math.min(w.level, MAX_WEAPON_LEVEL)
 
 export function updateWeapon(w: WeaponState, dt: number, player: Player, enemies: Enemy[], projectiles: Projectile[]) {
   // Update evolved name
-  w.name = w.level >= MAX_WEAPON_LEVEL ? EVOLVED_NAMES[w.id] : BASE_NAMES[w.id]
+  w.name = w.level >= maxLevelFor(w.id) ? EVOLVED_NAMES[w.id] : BASE_NAMES[w.id]
 
   w.timer -= dt
   if (w.chainTimer > 0) w.chainTimer -= dt
@@ -146,8 +153,9 @@ function updateFireball(w: WeaponState, player: Player, enemies: Enemy[], projec
 function updateLightning(w: WeaponState, player: Player, enemies: Enemy[]) {
   if (w.timer > 0) return
   const lvIdx = lv(w)
-  const chainCount = Math.min(1 + Math.floor(lvIdx / 1.5), 6) + (m6(w) ? 3 : 0)
-  const dmg = player.damage * (1.5 + lvIdx * 0.28) * (m6(w) ? M6_DMG : 1)
+  // One extra monster hit per level: lvl 1 -> 1 target, lvl 2 -> 2, ... up to lvl 15 -> 15.
+  const chainCount = w.level
+  const dmg = player.damage * (2.4 + w.level * 0.45) * (m6(w) ? M6_DMG : 1)
 
   const alive = enemies.filter(e => !e.dead)
   if (alive.length === 0) return
@@ -221,7 +229,7 @@ function renderOrb(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number, 
   const px = player.pos.x - camX; const py = player.pos.y - camY
   const pulse = (Math.sin(Date.now() / 280) + 1) / 2
   const alpha = 0.06 + pulse * 0.07
-  const isEvolved = w.level >= MAX_WEAPON_LEVEL
+  const isEvolved = w.level >= maxLevelFor(w.id)
   const color = isEvolved ? '220,130,255' : '167,139,250'
 
   const maxTimer = COOLDOWNS.orb[lvIdx]
@@ -255,7 +263,7 @@ function renderSword(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number
   const bladeCount = Math.min(1 + Math.floor(lvIdx / 1.5), 6) + (m6(w) ? 2 : 0)
   const orbitR = (55 + lvIdx * 8) * (m6(w) ? 1.2 : 1)
   const px = player.pos.x - camX; const py = player.pos.y - camY
-  const isEvolved = w.level >= MAX_WEAPON_LEVEL
+  const isEvolved = w.level >= maxLevelFor(w.id)
 
   for (let i = 0; i < bladeCount; i++) {
     const a = w.angle + (i / bladeCount) * Math.PI * 2
@@ -278,7 +286,7 @@ function renderAura(w: WeaponState, ctx: CanvasRenderingContext2D, camX: number,
   const px = player.pos.x - camX; const py = player.pos.y - camY
   const pulse = (Math.sin(Date.now() / 400) + 1) / 2
   const alpha = 0.06 + pulse * 0.08
-  const isEvolved = w.level >= MAX_WEAPON_LEVEL
+  const isEvolved = w.level >= maxLevelFor(w.id)
   const color = '100,210,255'
 
   // Expanding pulse ring when aura just fired

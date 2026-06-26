@@ -1,6 +1,6 @@
 import type { Player } from './entities/player'
 import type { Upgrade, Rarity, WeaponId } from './types'
-import { createWeapon, MAX_WEAPON_LEVEL } from './weapons'
+import { createWeapon, maxLevelFor } from './weapons'
 import type { WeaponState } from './weapons'
 
 interface UpgradeDef extends Upgrade {
@@ -75,12 +75,12 @@ export function pickWeaponUpgrades(count: number, playerWeapons: WeaponState[]):
       })
     } else {
       const curLevel = weaponMap.get(wid)!
-      if (curLevel < MAX_WEAPON_LEVEL) {
+      if (curLevel < maxLevelFor(wid)) {
         const newLevel = curLevel + 1
         pool.push({
           id: `w_up_${wid}`,
           name: `${WEAPON_NAMES[wid]} → Nv ${newLevel}`,
-          description: newLevel === MAX_WEAPON_LEVEL ? `Evolui para forma final!`
+          description: newLevel === maxLevelFor(wid) ? `Evolui para forma final!`
             : newLevel === 6 ? `Nível 6: poder aprimorado!`
             : `Evoluir para nível ${newLevel}`,
           rarity: rarityForLevel(newLevel),
@@ -114,6 +114,6 @@ export function applyUpgrade(id: string, player: Player) {
   if (id.startsWith('w_up_')) {
     const wid = id.replace('w_up_', '') as WeaponId
     const w = player.weapons.find(w => w.id === wid)
-    if (w && w.level < MAX_WEAPON_LEVEL) w.level++
+    if (w && w.level < maxLevelFor(wid)) w.level++
   }
 }
