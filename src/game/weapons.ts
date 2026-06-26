@@ -27,13 +27,12 @@ const EVOLVED_NAMES: Record<WeaponId, string> = {
   lightning: 'Tempestade Elétrica', aura: 'Nevasca Eterna', orb: 'Singularidade',
 }
 
-export const MAX_WEAPON_LEVEL = 8
 export const MILESTONE_LEVEL = 6
 
 // Per-weapon level caps. Most weapons evolve at level 8; the Raio (lightning)
 // keeps scaling all the way to level 15 (one extra chain target per level).
 const WEAPON_MAX_LEVELS: Record<WeaponId, number> = {
-  bow: 8, sword: 8, fireball: 8, lightning: 15, aura: 8, orb: 8,
+  bow: 10, sword: 8, fireball: 8, lightning: 15, aura: 8, orb: 8,
 }
 export function maxLevelFor(id: WeaponId): number { return WEAPON_MAX_LEVELS[id] }
 
@@ -41,9 +40,9 @@ export function maxLevelFor(id: WeaponId): number { return WEAPON_MAX_LEVELS[id]
 function m6(w: WeaponState): boolean { return w.level >= MILESTONE_LEVEL }
 const M6_DMG = 1.4
 
-// 8-level cooldown tables
+// Cooldown tables (one entry per level; the bow runs to level 10, the rest to 8)
 const COOLDOWNS: Record<WeaponId, number[]> = {
-  bow:       [1.2,  1.0,  0.85, 0.7,  0.6,  0.52, 0.45, 0.38],
+  bow:       [1.2,  1.0,  0.85, 0.7,  0.6,  0.52, 0.45, 0.38, 0.32, 0.27],
   sword:     [0,    0,    0,    0,    0,    0,    0,    0   ],
   fireball:  [2.5,  2.0,  1.65, 1.35, 1.1,  0.92, 0.78, 0.65],
   lightning: [1.8,  1.5,  1.2,  0.95, 0.78, 0.64, 0.54, 0.45],
@@ -55,7 +54,7 @@ export function createWeapon(id: WeaponId): WeaponState {
   return { id, name: BASE_NAMES[id], level: 1, timer: 0, angle: 0, chainSegments: [], chainTimer: 0, hitCooldowns: new Map() }
 }
 
-function lv(w: WeaponState): number { return Math.min(w.level, MAX_WEAPON_LEVEL) - 1 }
+function lv(w: WeaponState): number { return Math.min(w.level, COOLDOWNS[w.id].length) - 1 }
 
 export function updateWeapon(w: WeaponState, dt: number, player: Player, enemies: Enemy[], projectiles: Projectile[]) {
   // Update evolved name
@@ -96,7 +95,8 @@ function updateBow(w: WeaponState, player: Player, enemies: Enemy[], projectiles
 
   const dx = nearest.pos.x - player.pos.x; const dy = nearest.pos.y - player.pos.y
   const dmg = player.damage * (1 + lvIdx * 0.28) * (m6(w) ? M6_DMG : 1)
-  const arrowCount = (lvIdx >= 6 ? 4 : lvIdx >= 4 ? 3 : lvIdx >= 2 ? 2 : 1) + (m6(w) ? 1 : 0)
+  // Single arrow that fires faster every level (see COOLDOWNS.bow); bursts to 3 arrows at level 6+.
+  const arrowCount = w.level >= 6 ? 3 : 1
   const spread = 0.12
   const baseAngle = Math.atan2(dy, dx)
 

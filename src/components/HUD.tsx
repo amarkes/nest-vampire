@@ -60,15 +60,13 @@ function WeaponChip({ w }: { w: WeaponInfo }) {
             <span className="text-[10px] font-bold uppercase tracking-wide text-amber-300">MAX ★</span>
           ) : (
             <>
-              <div className="flex gap-0.5">
-                {Array.from({ length: w.maxLevel }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`h-1 w-1.5 rounded-sm ${i < w.level ? (milestone ? 'bg-fuchsia-400' : 'bg-emerald-400') : 'bg-gray-700'}`}
-                  />
-                ))}
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-700">
+                <div
+                  className={`h-full rounded-full ${milestone ? 'bg-fuchsia-400' : 'bg-emerald-400'}`}
+                  style={{ width: `${(w.level / w.maxLevel) * 100}%` }}
+                />
               </div>
-              <span className={`text-[10px] font-bold ${levelColor}`}>Lv{w.level}</span>
+              <span className={`shrink-0 text-[10px] font-bold ${levelColor}`}>Lv{w.level}/{w.maxLevel}</span>
             </>
           )}
         </div>

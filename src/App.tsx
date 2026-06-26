@@ -67,7 +67,11 @@ function Game() {
       {phase === 'levelup' && (
         <UpgradeModal
           upgrades={pendingUpgrades}
-          onChoose={(id) => { applyUpgradeFn?.(id); setPhase('playing') }}
+          onChoose={(id) => {
+            applyUpgradeFn?.(id)
+            // chooseUpgrade may open an extra passive pick (even level); only resume if it didn't.
+            if (useGameStore.getState().phase === 'levelup') setPhase('playing')
+          }}
           rerollsLeft={rerollsLeft}
           onReroll={() => rerollFn?.()}
           eyebrow="Level Up!"
