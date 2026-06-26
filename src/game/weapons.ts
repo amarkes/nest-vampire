@@ -172,7 +172,7 @@ function updateFireball(w: WeaponState, player: Player, enemies: Enemy[], projec
   const len = Math.sqrt(dx * dx + dy * dy) || 1
   const dmg = player.damage * (1.4 + lvIdx * 0.32) * (m6(w) ? M6_DMG : 1)
   // The ball grows every level; it pierces and damages everything it passes through up to its range.
-  const ballR = (18 + lvIdx * 6) * (m6(w) ? 1.3 : 1)
+  const ballR = (12 + lvIdx * 4) * (m6(w) ? 1.3 : 1)
   const proj = new Projectile(player.pos.x, player.pos.y, (dx / len) * 220, (dy / len) * 220, dmg, player.projectileRange * 1.3)
   proj.isFireball = true
   proj.piercing = true
