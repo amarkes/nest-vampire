@@ -9,6 +9,9 @@ export class Projectile {
   aoeRadius = 0
   aoeDamage = 0
   isFireball = false
+  // Piercing shots travel through everything, damaging each target once until they reach max range.
+  piercing = false
+  hit = new Set<object>()
   private maxDistance: number
   private traveled = 0
 
@@ -33,13 +36,18 @@ export class Projectile {
     const sx = this.pos.x - camX; const sy = this.pos.y - camY
 
     if (this.isFireball) {
+      // Ball scales with the projectile radius (which grows per weapon level): glow + core + hot center.
+      ctx.fillStyle = 'rgba(249,115,22,0.22)'
+      ctx.beginPath()
+      ctx.arc(sx, sy, this.radius, 0, Math.PI * 2)
+      ctx.fill()
       ctx.fillStyle = '#f97316'
       ctx.beginPath()
-      ctx.arc(sx, sy, 8, 0, Math.PI * 2)
+      ctx.arc(sx, sy, this.radius * 0.68, 0, Math.PI * 2)
       ctx.fill()
       ctx.fillStyle = '#fef08a'
       ctx.beginPath()
-      ctx.arc(sx, sy, 4, 0, Math.PI * 2)
+      ctx.arc(sx, sy, this.radius * 0.34, 0, Math.PI * 2)
       ctx.fill()
     } else {
       const spd = Math.sqrt(this.vel.x ** 2 + this.vel.y ** 2)

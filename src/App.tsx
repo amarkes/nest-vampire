@@ -13,7 +13,7 @@ function MainMenu() {
   const meta = loadMeta()
 
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center bg-black">
+    <div className="relative flex h-screen w-screen flex-col items-center justify-center bg-black">
       <h1 className="mb-2 text-6xl font-bold tracking-tight text-red-500">Nest Vampire</h1>
       <p className="mb-10 text-sm tracking-widest text-gray-600 uppercase">Survive the horde</p>
       <div className="flex flex-col gap-3 items-center">
@@ -30,6 +30,7 @@ function MainMenu() {
           🪙 Loja ({meta.gold}g)
         </button>
       </div>
+      <span className="absolute bottom-3 right-4 text-xs text-gray-700">v{__APP_VERSION__}</span>
     </div>
   )
 }

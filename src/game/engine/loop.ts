@@ -171,6 +171,20 @@ export function createLoop(canvas: HTMLCanvasElement, character: CharacterDef, c
       proj.update(dt)
       if (proj.dead) continue
 
+      // Piercing shots (e.g. the fireball) pass through, damaging each target once until they expire.
+      if (proj.piercing) {
+        if (boss && !boss.dead && !proj.hit.has(boss) && circles(proj.pos.x, proj.pos.y, proj.radius, boss.pos.x, boss.pos.y, boss.radius)) {
+          boss.takeDamage(proj.damage); proj.hit.add(boss)
+        }
+        for (const e of enemies) {
+          if (e.dead || proj.hit.has(e)) continue
+          if (!circles(proj.pos.x, proj.pos.y, proj.radius, e.pos.x, e.pos.y, e.radius)) continue
+          e.justDied = false; e.takeDamage(proj.damage); proj.hit.add(e)
+          if (e.justDied) onKill(e)
+        }
+        continue
+      }
+
       // Hit boss first
       if (boss && !boss.dead && circles(proj.pos.x, proj.pos.y, proj.radius, boss.pos.x, boss.pos.y, boss.radius)) {
         boss.takeDamage(proj.damage)

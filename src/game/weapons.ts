@@ -17,6 +17,9 @@ export interface WeaponState {
   chainSegments: ChainSegment[]
   chainTimer: number
   hitCooldowns: Map<Enemy, number>
+  // Bow level-6 burst: remaining arrows still to fire one-by-one, and the delay until the next one.
+  burstQueue: Enemy[]
+  burstTimer: number
 }
 
 const BASE_NAMES: Record<WeaponId, string> = {
@@ -42,16 +45,16 @@ const M6_DMG = 1.4
 
 // Cooldown tables (one entry per level; the bow runs to level 10, the rest to 8)
 const COOLDOWNS: Record<WeaponId, number[]> = {
-  bow:       [1.2,  1.0,  0.85, 0.7,  0.6,  0.52, 0.45, 0.38, 0.32, 0.27],
+  bow:       [1.1,  95,  0.80, 0.68,  0.55,  0.48, 0.42, 0.35, 0.29, 0.20],
   sword:     [0,    0,    0,    0,    0,    0,    0,    0   ],
-  fireball:  [2.5,  2.0,  1.65, 1.35, 1.1,  0.92, 0.78, 0.65],
+  fireball:  [2,  1.8,  1.6, 1.4, 1.1,  0.80, 0.7, 0.6],
   lightning: [1.8,  1.5,  1.2,  0.95, 0.78, 0.64, 0.54, 0.45],
   aura:      [1.5,  1.2,  1.0,  0.82, 0.67, 0.56, 0.47, 0.40],
   orb:       [0.50, 0.40, 0.32, 0.26, 0.22, 0.19, 0.17, 0.15],
 }
 
 export function createWeapon(id: WeaponId): WeaponState {
-  return { id, name: BASE_NAMES[id], level: 1, timer: 0, angle: 0, chainSegments: [], chainTimer: 0, hitCooldowns: new Map() }
+  return { id, name: BASE_NAMES[id], level: 1, timer: 0, angle: 0, chainSegments: [], chainTimer: 0, hitCooldowns: new Map(), burstQueue: [], burstTimer: 0 }
 }
 
 function lv(w: WeaponState): number { return Math.min(w.level, COOLDOWNS[w.id].length) - 1 }
@@ -71,7 +74,7 @@ export function updateWeapon(w: WeaponState, dt: number, player: Player, enemies
   }
 
   switch (w.id) {
-    case 'bow':       updateBow(w, player, enemies, projectiles); break
+    case 'bow':       updateBow(w, dt, player, enemies, projectiles); break
     case 'sword':     updateSword(w, dt, player, enemies); break
     case 'fireball':  updateFireball(w, player, enemies, projectiles); break
     case 'lightning': updateLightning(w, player, enemies); break
@@ -80,31 +83,56 @@ export function updateWeapon(w: WeaponState, dt: number, player: Player, enemies
   }
 }
 
-function updateBow(w: WeaponState, player: Player, enemies: Enemy[], projectiles: Projectile[]) {
-  if (w.timer > 0) return
+// Delay between the sequential arrows of a level-6 burst (one shot after another).
+const BOW_BURST_INTERVAL = 0.1
+
+// Pick the `count` closest distinct living enemies to the player, nearest first.
+function nearestEnemies(player: Player, enemies: Enemy[], count: number): Enemy[] {
+  const alive = enemies.filter(e => !e.dead)
+  alive.sort((a, b) => {
+    const da = (a.pos.x - player.pos.x) ** 2 + (a.pos.y - player.pos.y) ** 2
+    const db = (b.pos.x - player.pos.x) ** 2 + (b.pos.y - player.pos.y) ** 2
+    return da - db
+  })
+  return alive.slice(0, count)
+}
+
+function fireArrowAt(w: WeaponState, player: Player, target: Enemy, projectiles: Projectile[], lvIdx: number) {
+  const dx = target.pos.x - player.pos.x; const dy = target.pos.y - player.pos.y
+  const len = Math.hypot(dx, dy) || 1
+  const dmg = player.damage * (1 + lvIdx * 0.28) * (m6(w) ? M6_DMG : 1)
+  projectiles.push(new Projectile(player.pos.x, player.pos.y, (dx / len) * 420, (dy / len) * 420, dmg, player.projectileRange))
+}
+
+function updateBow(w: WeaponState, dt: number, player: Player, enemies: Enemy[], projectiles: Projectile[]) {
   const lvIdx = lv(w)
 
-  let nearest: Enemy | null = null; let nearestSq = Infinity
-  for (const e of enemies) {
-    if (e.dead) continue
-    const dx = e.pos.x - player.pos.x; const dy = e.pos.y - player.pos.y
-    const sq = dx * dx + dy * dy
-    if (sq < nearestSq) { nearestSq = sq; nearest = e }
+  // Drain a pending level-6 burst: fire the next arrow once its interval elapses, each at its own monster.
+  if (w.burstQueue.length > 0) {
+    w.burstTimer -= dt
+    if (w.burstTimer <= 0) {
+      let target = w.burstQueue.shift()!
+      if (target.dead) target = nearestEnemies(player, enemies, 1)[0] // queued monster died: retarget to nearest
+      if (target) fireArrowAt(w, player, target, projectiles, lvIdx)
+      w.burstTimer = BOW_BURST_INTERVAL
+    }
+    return
   }
-  if (!nearest) return
 
-  const dx = nearest.pos.x - player.pos.x; const dy = nearest.pos.y - player.pos.y
-  const dmg = player.damage * (1 + lvIdx * 0.28) * (m6(w) ? M6_DMG : 1)
-  // Single arrow that fires faster every level (see COOLDOWNS.bow); bursts to 3 arrows at level 6+.
+  if (w.timer > 0) return
+
+  // Level 6+ fires a 3-arrow burst, one after another at distinct monsters; otherwise a single arrow.
   const arrowCount = w.level >= 6 ? 3 : 1
-  const spread = 0.12
-  const baseAngle = Math.atan2(dy, dx)
+  const distinct = nearestEnemies(player, enemies, arrowCount)
+  if (distinct.length === 0) return
 
-  for (let i = 0; i < arrowCount; i++) {
-    const off = (i - (arrowCount - 1) / 2) * spread
-    const a = baseAngle + off
-    projectiles.push(new Projectile(player.pos.x, player.pos.y, Math.cos(a) * 420, Math.sin(a) * 420, dmg, player.projectileRange))
-  }
+  // Build the full shot list; if fewer monsters than arrows, the extra arrows reuse the nearest ones.
+  const targets: Enemy[] = []
+  for (let i = 0; i < arrowCount; i++) targets.push(distinct[i % distinct.length])
+
+  fireArrowAt(w, player, targets[0], projectiles, lvIdx) // first arrow flies immediately
+  w.burstQueue = targets.slice(1)
+  w.burstTimer = BOW_BURST_INTERVAL
   w.timer = COOLDOWNS.bow[lvIdx]
 }
 
@@ -141,11 +169,14 @@ function updateFireball(w: WeaponState, player: Player, enemies: Enemy[], projec
   if (!nearest) return
 
   const dx = nearest.pos.x - player.pos.x; const dy = nearest.pos.y - player.pos.y
-  const len = Math.sqrt(dx * dx + dy * dy)
+  const len = Math.sqrt(dx * dx + dy * dy) || 1
   const dmg = player.damage * (1.4 + lvIdx * 0.32) * (m6(w) ? M6_DMG : 1)
-  const aoeR = (45 + lvIdx * 14) * (m6(w) ? 1.3 : 1)
-  const proj = new Projectile(player.pos.x, player.pos.y, (dx / len) * 170, (dy / len) * 170, dmg, player.projectileRange * 1.3)
-  proj.aoeRadius = aoeR; proj.aoeDamage = dmg; proj.isFireball = true
+  // The ball grows every level; it pierces and damages everything it passes through up to its range.
+  const ballR = (18 + lvIdx * 6) * (m6(w) ? 1.3 : 1)
+  const proj = new Projectile(player.pos.x, player.pos.y, (dx / len) * 220, (dy / len) * 220, dmg, player.projectileRange * 1.3)
+  proj.isFireball = true
+  proj.piercing = true
+  proj.radius = ballR
   projectiles.push(proj)
   w.timer = COOLDOWNS.fireball[lvIdx]
 }
