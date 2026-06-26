@@ -45,7 +45,7 @@ const M6_DMG = 1.4
 
 // Cooldown tables (one entry per level; the bow runs to level 10, the rest to 8)
 const COOLDOWNS: Record<WeaponId, number[]> = {
-  bow:       [1.1,  95,  0.80, 0.68,  0.55,  0.48, 0.42, 0.35, 0.29, 0.20],
+  bow:       [1.1,  0.95,  0.80, 0.68,  0.55,  0.48, 0.42, 0.35, 0.29, 0.20],
   sword:     [0,    0,    0,    0,    0,    0,    0,    0   ],
   fireball:  [2,  1.8,  1.6, 1.4, 1.1,  0.80, 0.7, 0.6],
   lightning: [1.8,  1.5,  1.2,  0.95, 0.78, 0.64, 0.54, 0.45],
